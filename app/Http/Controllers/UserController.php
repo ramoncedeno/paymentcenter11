@@ -22,7 +22,7 @@ class UserController extends Controller
         return redirect('/')->with('success', 'All good!');
     }
 
-    // View Form
+    // View Form import users
     public function showimportform()
     {
         return view('formimportusers');
