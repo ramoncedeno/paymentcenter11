@@ -10,32 +10,47 @@ use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class UsersImport implements ToModel,WithHeadingRow,WithChunkReading,WithBatchInserts,ShouldQueue
+class UsersImport implements ToModel, WithHeadingRow, WithChunkReading, WithBatchInserts, ShouldQueue
 {
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+     * Process each row in the file..
+     *
+     * @param array $row
+     * @return null
+     */
     public function model(array $row)
     {
-        return new User([
-            'name'     => $row['name'],
-            'email'    => $row['email'],
-            'password' => Hash::make($row['password']),
-         ]);
+        try {
+            // Update if existing or create a new user
+            User::updateOrCreate(
+                [
+                    'email' => $row['email'], // Unique key to avoid duplicates
+                ],
+                [
+                    'name' => $row['name'],
+                    'password' => Hash::make($row['password']),
+                ]
+            );
+        } catch (\Exception $e) {
+            \log::error('Error al importar usuario: ' . $e->getMessage());
+        }
     }
 
-
-    // Chunk reading https://docs.laravel-excel.com/3.1/imports/chunk-reading.html
-
+    /**
+     * Chunk size for processing data in fragments
+     *
+     * @return int
+     */
     public function chunkSize(): int
     {
         return 300;
     }
 
-    // Batch inserts https://docs.laravel-excel.com/3.1/imports/batch-inserts.html
-
+    /**
+     * * Lot size for bulk inserts.
+     *
+     * @return int
+     */
     public function batchSize(): int
     {
         return 6000;
